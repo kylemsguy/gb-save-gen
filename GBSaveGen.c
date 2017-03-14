@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
+#include <ctype.h>
+#include <stdbool.h>
 
 #include "GBSaveGen.h"
 
@@ -10,13 +12,13 @@ char rom_data[ROM_HEADER_SIZE];
 
 
 void usage(){
-    printf('./BennVennSaveGen.py -r <ROM filename> [-n <output_filename>] [-h]');
-    printf("\t-r: The ROM's filename (required)");
-    printf("\t-n: (optional) The desired save file's name. If this is not provided,");
-    printf("\t    the ROM's name is either read from the header, or the ROM's filename");
-    printf("\t    (default)");
-    printf("\t-h: Read the ROM's filename from the ROM header (ignored if -n provided)");
-    abort();
+    printf("./BennVennSaveGen.py -r <ROM filename> [-n <output_filename>] [-h]\n");
+    printf("\t-r: The ROM's filename (required)\n");
+    printf("\t-n: (optional) The desired save file's name. If this is not provided,\n");
+    printf("\t    the ROM's name is either read from the header, or the ROM's filename\n");
+    printf("\t    (default)\n");
+    printf("\t-h: Read the ROM's filename from the ROM header (ignored if -n provided)\n");
+    exit(EXIT_FAILURE);
 }
 
 /**
@@ -41,7 +43,7 @@ int get_sram_size(char cart_type, char ram_type){
         case 5:
             return 64 * 1024;
         default:
-            return -1
+            return -1;
     }
 }
 
@@ -79,7 +81,7 @@ int main(int argc, char **argv){
                 }
                 return EXIT_FAILURE;
             default:
-                abort();
+                exit(EXIT_FAILURE);
         }
     }
 
@@ -89,13 +91,12 @@ int main(int argc, char **argv){
     // }
 
     if(in_filename == NULL){
-        fprintf(stderr, "No input ROM provided.");
-        abort();
+        usage();
     }
 
     if((infile = fopen(in_filename, "rb")) == NULL){
-        fprintf(stderr, "Failed to open input file");
-        abort();
+        fprintf(stderr, "Failed to open input file (%s)\n", in_filename);
+        exit(EXIT_FAILURE);
     }
 
     int read_bytes = fread(rom_data, 1, ROM_HEADER_SIZE, infile);
@@ -103,12 +104,12 @@ int main(int argc, char **argv){
     if(read_bytes < ROM_HEADER_SIZE){
         fprintf(stderr, "Input file size too small (%d bytes < %d bytes expected)", 
             read_bytes, ROM_HEADER_SIZE);
-        abort();
+        exit(EXIT_FAILURE);
     }
 
     fclose(infile);
 
-    struct GBRomHeaderv2 *header = rom_data + 0x100;
+    struct GBRomHeaderv2 *header = (struct GBRomHeaderv2 *) (rom_data + 0x100);
 
     // the magic begins
     if(read_rom_name){
@@ -117,9 +118,9 @@ int main(int argc, char **argv){
         out_filename = rom_title_name;
     }
 
-    int sram_size = get_sram_size(header->cart_type, header->ram_size);
+    int sram_size = get_sram_size(header->cart_type, header->sram_size);
 
-    printf("SRAM size detected: %d", sram_size);
+    printf("SRAM size detected: %d\n", sram_size);
 
     return EXIT_SUCCESS;
 }
